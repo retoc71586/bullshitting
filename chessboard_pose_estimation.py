@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # Read input
 
     current_file_path = os.path.abspath(__file__)
-    video_path = os.path.join(os.path.dirname(current_file_path), "1_checkerd_calib_high_res.mp4")
+    video_path = os.path.join(os.path.dirname(current_file_path), "/input/1_checkerd_calib_high_res.mp4")
     cam = cv2.VideoCapture(video_path)
     valid, frame = cam.read()
     assert valid, "Failed to read from camera"
