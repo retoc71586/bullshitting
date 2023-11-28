@@ -74,13 +74,14 @@ def createBoard():
     return frame
 
 class PoseEstimator():
-    def estimatePose(visualise = False):
+    def estimatePose(self, visualise=False):
+        # Your code here
         '''@return rvecs, tvecs'''
         np.set_printoptions(suppress=True)
         legend = Legend()
         square_side_len = 0.03
-        board_height = 0.006
-        board_height = 0.0
+        board_height_real = 0.006
+        board_height = 0.0 # I need to set it to 0 for cv2.calibrateCamera to work. It will be added back to the final result
         undistort = False # I don't know why but yelds worse inliners percentage if true
 
         # Read input
@@ -130,27 +131,33 @@ class PoseEstimator():
 
         ############## CALIBRATION #######################################################
         ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objp.reshape(1,rows*cols,3), corners2.reshape(1,rows*cols,2), (w, h), None, None)
+        newCameraMatrix = cameraMatrix
 
-        ############## UNDISTORTION #####################################################
-        newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
-        # Undistort
-        dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
-        # crop the image
-        x, y, w, h = roi
-        undistorted_image = dst[y:y+h, x:x+w]
-        grey = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
+        # ############## UNDISTORTION #####################################################
+        # newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
+        # print("Estimated camera matrix: \n", cameraMatrix)  
+        # print("Estimated distortion coefficients: \n", dist)
+
+        # # Undistort
+        # dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
+        # # crop the image
+        # x, y, w, h = roi
+        # undistorted_image = dst[y:y+h, x:x+w]
+        # gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
 
         ############## FIND NEW CHESSBOARD CORNERS  POSITIONS #############################
-        ret, corners = cv2.findChessboardCorners(grey, (rows, cols), cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
+        ret, corners = cv2.findChessboardCorners(gray, (rows, cols), cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
         # If found, add object points, image points (after refining them)
         assert ret == True, print("Failed finding board")
         # objpoints.append(objp)
-        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
+        corners2_ = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
 
         # Find camera pose
         ret, rvecs, tvecs, inliners = cv2.solvePnPRansac(objp, corners2, newCameraMatrix, dist, confidence=0.999)
         assert ret == True, print("Failed solving PnP")
-        print(f"Inliners percentage: {len(inliners)/len(corners2)*100:.3f} % of point correspondences")
+        print(f"> Inliners percentage: {len(inliners)/len(corners2)*100:.3f} % of point correspondences")
+        # Add back board height:
+        tvecs[2] += board_height_real
         # Create a 4x4 transformation matrix
         rotation_matrix, _ = cv2.Rodrigues(rvecs)
         transformation_matrix = np.eye(4)
@@ -184,12 +191,12 @@ class PoseEstimator():
             )
             assert cv2.imwrite(output_file_path, drew_frame)
 
-        # # Calculate mean reprojection error
-        # imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, newCameraMatrix, dist)
-        # imgpoints2 = imgpoints2.reshape(rows*cols, 2)
-        # error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-        # print("total error: {} px, below .33px is acceptable.".format(
-        #     error))
+        # Calculate mean reprojection error
+        imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, newCameraMatrix, dist)
+        imgpoints2 = imgpoints2.reshape(rows*cols, 2)
+        error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+        print("> Total error: {} px, below .33px is acceptable.".format(
+            error))
         
         # side = np.array([0., square_side_len, 0., 1.])
         # center = np.array([0., 0., 0., 1.])
@@ -210,7 +217,6 @@ class PoseEstimator():
         # cv2.circle(dimentions_check, px_center.astype(int), 10, (0, 255, 0), -1)  # Draw a green circle
         # # cv2.circle(dimentions_check, manual_px_center.astype(int), 10, (255, 0, 0), -1)  # Draw a green circle
         # cv2.imwrite("calib_data/dimentions_check.png", dimentions_check)
-
         return rvecs, tvecs
 
 
