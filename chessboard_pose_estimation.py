@@ -85,11 +85,12 @@ class PoseEstimator():
         # Read input
 
         current_file_path = os.path.abspath(__file__)
-        video_path = os.path.join(os.path.dirname(current_file_path), "input/1_checkerd_calib_high_res.mp4")
+        video_path = os.path.join(os.path.dirname(current_file_path), "input/1_checkerd_calib_ros.mp4")
         cam = cv2.VideoCapture(video_path)
         valid, frame = cam.read()
         assert valid, "Failed to read video stream from file"
         h, w = frame.shape[:2]
+        print("Video resolution: ", w, h)
         # Copy the original image a bunch of time for visualization of different steps
         img = frame.copy()
         distorted_image = frame.copy()
@@ -106,13 +107,22 @@ class PoseEstimator():
 
         # Calibrate camera
         # For the high res vid
-        mtx = np.array([
-                [3075.880615234375, 0.0, 1942.84619140625],
-                [0.0, 3075.880615234375, 1103.8968505859375],
-                [0.0, 0.0, 1.0],
-            ])
+        # mtx = np.array([
+        #         [3075.880615234375, 0.0, 1942.84619140625],
+        #         [0.0, 3075.880615234375, 1103.8968505859375],
+        #         [0.0, 0.0, 1.0],
+        #     ])
+        # mtx = np.array([
+        #      [1025.2935791,    0.         , 647.61541748],
+        #      [   0.       , 1025.2935791  , 367.96563721],
+        #      [   0.       ,    0.         ,   1.        ],
+        #     ])
         # For ros low res
-        # mtx = np.array([512.6467895507812, 0.0, 323.8077087402344, 0.0, 512.6467895507812, 183.98281860351562, 0.0,0.0,1.0,])
+        mtx = np.array([
+            [512.6467895507812, 0.0,                323.8077087402344],
+            [0.0,               512.6467895507812,  183.98281860351562],
+            [0.0,               0.0,                1.0],
+            ])
         dist = np.array([12.029667854309082, -115.97200775146484, 0.002035579876974225, 0.002628991613164544,
                         373.9336242675781, 11.838055610656738, -114.76853942871094, 369.8811340332031, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,])
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

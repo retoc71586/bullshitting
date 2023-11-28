@@ -125,7 +125,7 @@ if __name__ == "__main__":
     robot = np.linalg.inv(T_robot_chessboard)
 
     T_robot_camera =  np.matmul(T_robot_chessboard, np.linalg.inv(T_camera_chessboard))
-    print("T_robot_camera",T_robot_camera)
+    print("T_robot_camera\n",T_robot_camera)
     print("translation is: ", T_robot_camera[:3, 3]/np.array([0.44, 1, 0.935]) , "times the ground truth")
 
     # Plot the frames
