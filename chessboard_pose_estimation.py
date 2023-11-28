@@ -199,7 +199,7 @@ class PoseEstimator():
         cv2.circle(dimentions_check, px_center.astype(int), 10, (0, 255, 0), -1)  # Draw a green circle
         # cv2.circle(dimentions_check, manual_px_center.astype(int), 10, (255, 0, 0), -1)  # Draw a green circle
         cv2.imwrite("calib_data/dimentions_check.png", dimentions_check)
-        return rvecs, tvecs/2
+        return rvecs, tvecs
 
 
 if __name__ == "__main__":
