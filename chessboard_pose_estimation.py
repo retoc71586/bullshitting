@@ -132,26 +132,22 @@ class PoseEstimator():
 
         ############## CALIBRATION #######################################################
         ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objp.reshape(1,rows*cols,3), corners2.reshape(1,rows*cols,2), (w, h), None, None)
-        newCameraMatrix = cameraMatrix
 
-        # ############## UNDISTORTION #####################################################
-        # newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
-        # print("Estimated camera matrix: \n", cameraMatrix)  
-        # print("Estimated distortion coefficients: \n", dist)
-
-        # # Undistort
-        # dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
-        # # crop the image
-        # x, y, w, h = roi
-        # undistorted_image = dst[y:y+h, x:x+w]
-        # gray = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
+        ############## UNDISTORTION #####################################################
+        newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
+        # Undistort
+        dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
+        # crop the image
+        x, y, w, h = roi
+        undistorted_image = dst[y:y+h, x:x+w]
+        grey = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
 
         ############## FIND NEW CHESSBOARD CORNERS  POSITIONS #############################
-        ret, corners = cv2.findChessboardCorners(gray, (rows, cols), cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
+        ret, corners = cv2.findChessboardCorners(grey, (rows, cols), cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
         # If found, add object points, image points (after refining them)
         assert ret == True, print("Failed finding board")
         # objpoints.append(objp)
-        corners2_ = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
+        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
 
         # Find camera pose
         ret, rvecs, tvecs, inliners = cv2.solvePnPRansac(objp, corners2, newCameraMatrix, dist, confidence=0.999)
@@ -192,12 +188,12 @@ class PoseEstimator():
             )
             assert cv2.imwrite(output_file_path, drew_frame)
 
-        # Calculate mean reprojection error
-        imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, newCameraMatrix, dist)
-        imgpoints2 = imgpoints2.reshape(rows*cols, 2)
-        error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-        print("> Total error: {} px, below .33px is acceptable.".format(
-            error))
+        # # Calculate mean reprojection error
+        # imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, newCameraMatrix, dist)
+        # imgpoints2 = imgpoints2.reshape(rows*cols, 2)
+        # error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+        # print("total error: {} px, below .33px is acceptable.".format(
+        #     error))
         
         # side = np.array([0., square_side_len, 0., 1.])
         # center = np.array([0., 0., 0., 1.])
@@ -210,7 +206,6 @@ class PoseEstimator():
         # px_side = px_side.reshape(2)
         # px_center, _ = cv2.projectPoints(center[:3], rvecs, tvecs, mtx, dist)
         # px_center = px_center.reshape(2)
-
 
         # manual_px_center, _ = cv2.projectPoints(cam_center[:3], np.zeros(3),  np.zeros(3), mtx, dist)
         # manual_px_center = manual_px_center.reshape(2)
