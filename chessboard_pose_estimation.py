@@ -106,7 +106,7 @@ class PoseEstimator():
         objp = np.array(objp, np.float32)
 
         # Calibrate camera
-        # For the high res vid
+        # For the high res vid [total crap]
         # mtx = np.array([
         #         [3075.880615234375, 0.0, 1942.84619140625],
         #         [0.0, 3075.880615234375, 1103.8968505859375],
@@ -191,24 +191,6 @@ class PoseEstimator():
         print("total error: {} px, below .33px is acceptable.".format(
             error))
         
-        side = np.array([0., square_side_len, 0., 1.])
-        center = np.array([0., 0., 0., 1.])
-        print("center[:3]", center[:3])
-        cam_side = np.matmul(transformation_matrix, side)
-        cam_center = np.matmul(transformation_matrix, center)
-        print("cam_side: ",cam_side)
-        print("cam_center: ",cam_center)
-        px_side, _ = cv2.projectPoints(cam_side[:3], rvecs, tvecs, mtx, dist)
-        px_side = px_side.reshape(2)
-        px_center, _ = cv2.projectPoints(center[:3], rvecs, tvecs, mtx, dist)
-        px_center = px_center.reshape(2)
-
-        manual_px_center, _ = cv2.projectPoints(cam_center[:3], np.zeros(3),  np.zeros(3), mtx, dist)
-        manual_px_center = manual_px_center.reshape(2)
-        # cv2.line(dimentions_check, tuple([0,0]), tuple(px_side[:2].astype(int)), (0, 0, 255), 2,)
-        cv2.circle(dimentions_check, px_center.astype(int), 10, (0, 255, 0), -1)  # Draw a green circle
-        # cv2.circle(dimentions_check, manual_px_center.astype(int), 10, (255, 0, 0), -1)  # Draw a green circle
-        cv2.imwrite("calib_data/dimentions_check.png", dimentions_check)
         return rvecs, tvecs
 
 
