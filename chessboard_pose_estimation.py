@@ -104,31 +104,20 @@ class PoseEstimator():
             for y in range(rows):
                 objp.append([x*square_side_len, y*square_side_len, board_height])
         objp = np.array(objp, np.float32)
+        print(objp.shape)
 
-        # Calibrate camera
-        # For the high res vid
-        mtx = np.array([
-                [3075.880615234375, 0.0, 1942.84619140625],
-                [0.0, 3075.880615234375, 1103.8968505859375],
-                [0.0, 0.0, 1.0],
-            ])
-        # For ros low res
-        # mtx = np.array([512.6467895507812, 0.0, 323.8077087402344, 0.0, 512.6467895507812, 183.98281860351562, 0.0,0.0,1.0,])
-        dist = np.array([12.029667854309082, -115.97200775146484, 0.002035579876974225, 0.002628991613164544,
-                        373.9336242675781, 11.838055610656738, -114.76853942871094, 369.8811340332031, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,])
+        # # Calibrate camera
+        # # For the high res vid
+        # mtx = np.array([
+        #         [3075.880615234375, 0.0, 1942.84619140625],
+        #         [0.0, 3075.880615234375, 1103.8968505859375],
+        #         [0.0, 0.0, 1.0],
+        #     ])
+        # # For ros low res
+        # # mtx = np.array([512.6467895507812, 0.0, 323.8077087402344, 0.0, 512.6467895507812, 183.98281860351562, 0.0,0.0,1.0,])
+        # dist = np.array([12.029667854309082, -115.97200775146484, 0.002035579876974225, 0.002628991613164544,
+        #                 373.9336242675781, 11.838055610656738, -114.76853942871094, 369.8811340332031, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,])
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        if undistort:
-            newcameramtx, roi = cv2.getOptimalNewCameraMatrix(
-                mtx, dist, (w, h), 1, (w, h))
-            # undistort
-            dst = cv2.undistort(frame, mtx, dist)
-            # crop the image
-            x, y, w, h = roi
-            frame = dst[y: y + h, x: x + w]
-            undistorted_image = frame.copy()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
 
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(
@@ -137,9 +126,29 @@ class PoseEstimator():
         assert ret == True, print("Failed finding board")
         # objpoints.append(objp)
         corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
+        print(corners2.shape)
+
+        ############## CALIBRATION #######################################################
+        ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objp.reshape(1,rows*cols,3), corners2.reshape(1,rows*cols,2), (w, h), None, None)
+
+        ############## UNDISTORTION #####################################################
+        newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(cameraMatrix, dist, (w,h), 1, (w,h))
+        # Undistort
+        dst = cv2.undistort(img, cameraMatrix, dist, None, newCameraMatrix)
+        # crop the image
+        x, y, w, h = roi
+        undistorted_image = dst[y:y+h, x:x+w]
+        grey = cv2.cvtColor(undistorted_image, cv2.COLOR_BGR2GRAY)
+
+        ############## FIND NEW CHESSBOARD CORNERS  POSITIONS #############################
+        ret, corners = cv2.findChessboardCorners(grey, (rows, cols), cv2.CALIB_CB_FILTER_QUADS + cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_NORMALIZE_IMAGE)
+        # If found, add object points, image points (after refining them)
+        assert ret == True, print("Failed finding board")
+        # objpoints.append(objp)
+        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria).reshape(rows*cols, 2)
 
         # Find camera pose
-        ret, rvecs, tvecs, inliners = cv2.solvePnPRansac(objp, corners2, mtx, dist, confidence=0.999)
+        ret, rvecs, tvecs, inliners = cv2.solvePnPRansac(objp, corners2, newCameraMatrix, dist, confidence=0.999)
         assert ret == True, print("Failed solving PnP")
         print(f"Inliners percentage: {len(inliners)/len(corners2)*100:.3f} % of point correspondences")
         # Create a 4x4 transformation matrix
@@ -169,37 +178,39 @@ class PoseEstimator():
             cv2.imwrite("calib_data/detected_corners.png", frame)
             legend.draw_legend(frame)
             drew_frame = cv2.drawFrameAxes(
-                frame, mtx, dist, rvecs, tvecs, square_side_len)
+                frame, newCameraMatrix, dist, rvecs, tvecs, square_side_len)
             output_file_path = os.path.join(
                 os.path.dirname(__file__), "calib_data", "estimated_pose.png"
             )
             assert cv2.imwrite(output_file_path, drew_frame)
 
-        # Calculate mean reprojection error
-        imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, mtx, dist)
-        imgpoints2 = imgpoints2.reshape(rows*cols, 2)
-        error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
-        print("total error: {} px, below .33px is acceptable.".format(
-            error))
+        # # Calculate mean reprojection error
+        # imgpoints2, _ = cv2.projectPoints(objp, rvecs, tvecs, newCameraMatrix, dist)
+        # imgpoints2 = imgpoints2.reshape(rows*cols, 2)
+        # error = cv2.norm(corners2, imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+        # print("total error: {} px, below .33px is acceptable.".format(
+        #     error))
         
-        side = np.array([0., square_side_len, 0., 1.])
-        center = np.array([0., 0., 0., 1.])
-        print("center[:3]", center[:3])
-        cam_side = np.matmul(transformation_matrix, side)
-        cam_center = np.matmul(transformation_matrix, center)
-        print("cam_side: ",cam_side)
-        print("cam_center: ",cam_center)
-        px_side, _ = cv2.projectPoints(cam_side[:3], rvecs, tvecs, mtx, dist)
-        px_side = px_side.reshape(2)
-        px_center, _ = cv2.projectPoints(center[:3], rvecs, tvecs, mtx, dist)
-        px_center = px_center.reshape(2)
+        # side = np.array([0., square_side_len, 0., 1.])
+        # center = np.array([0., 0., 0., 1.])
+        # print("center[:3]", center[:3])
+        # cam_side = np.matmul(transformation_matrix, side)
+        # cam_center = np.matmul(transformation_matrix, center)
+        # print("cam_side: ",cam_side)
+        # print("cam_center: ",cam_center)
+        # px_side, _ = cv2.projectPoints(cam_side[:3], rvecs, tvecs, mtx, dist)
+        # px_side = px_side.reshape(2)
+        # px_center, _ = cv2.projectPoints(center[:3], rvecs, tvecs, mtx, dist)
+        # px_center = px_center.reshape(2)
 
-        manual_px_center, _ = cv2.projectPoints(cam_center[:3], np.zeros(3),  np.zeros(3), mtx, dist)
-        manual_px_center = manual_px_center.reshape(2)
-        # cv2.line(dimentions_check, tuple([0,0]), tuple(px_side[:2].astype(int)), (0, 0, 255), 2,)
-        cv2.circle(dimentions_check, px_center.astype(int), 10, (0, 255, 0), -1)  # Draw a green circle
-        # cv2.circle(dimentions_check, manual_px_center.astype(int), 10, (255, 0, 0), -1)  # Draw a green circle
-        cv2.imwrite("calib_data/dimentions_check.png", dimentions_check)
+
+        # manual_px_center, _ = cv2.projectPoints(cam_center[:3], np.zeros(3),  np.zeros(3), mtx, dist)
+        # manual_px_center = manual_px_center.reshape(2)
+        # # cv2.line(dimentions_check, tuple([0,0]), tuple(px_side[:2].astype(int)), (0, 0, 255), 2,)
+        # cv2.circle(dimentions_check, px_center.astype(int), 10, (0, 255, 0), -1)  # Draw a green circle
+        # # cv2.circle(dimentions_check, manual_px_center.astype(int), 10, (255, 0, 0), -1)  # Draw a green circle
+        # cv2.imwrite("calib_data/dimentions_check.png", dimentions_check)
+
         return rvecs, tvecs
 
 
