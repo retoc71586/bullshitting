@@ -92,6 +92,7 @@ class PoseEstimator():
         valid, frame = cam.read()
         assert valid, "Failed to read video stream from file"
         h, w = frame.shape[:2]
+        print("image size: ", w, h)
         # Copy the original image a bunch of time for visualization of different steps
         img = frame.copy()
         distorted_image = frame.copy()
