@@ -74,7 +74,7 @@ def createBoard():
     return frame
 
 class PoseEstimator():
-    def estimatePose(visualise = False):
+    def estimatePose(self, visualise = False):
         '''@return rvecs, tvecs'''
         np.set_printoptions(suppress=True)
         legend = Legend()
@@ -170,16 +170,16 @@ class PoseEstimator():
 
             # Draw circles at each corner with their index
             for i, (x, y) in enumerate(corners2):
-                cv2.circle(corners_idx, (int(x), int(y)), 5, (0, 255, 0), -1)  # Draw a green circle
-                cv2.putText(corners_idx, str(i), (int(x) - 10, int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                cv2.circle(corners_idx, (int(x), int(y)), 2, (0, 255, 0), -1)  # Draw a green circle
+                cv2.putText(corners_idx, str(i), (int(x) - 10, int(y) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 255, 255), 1)
             cv2.imwrite("calib_data/corners_idx.png", corners_idx)
 
             # Draw and display the corners            
             cv2.drawChessboardCorners(frame, (rows, cols), corners2, ret)
             cv2.imwrite("calib_data/detected_corners.png", frame)
-            legend.draw_legend(frame)
+            legend.draw_legend(img)
             drew_frame = cv2.drawFrameAxes(
-                frame, mtx, dist, rvecs, tvecs, square_side_len)
+                img, mtx, dist, rvecs, tvecs, 3*square_side_len)
             output_file_path = os.path.join(
                 os.path.dirname(__file__), "calib_data", "estimated_pose.png"
             )
