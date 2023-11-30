@@ -39,23 +39,12 @@ T_camera_chessboard = np.array([
  ])
 
 # Transforms from tag frame to camera frame
-T_camera_tag = np.array(
-    [
-        [-0.99784732, 0.00869479, 0.06500096, -0.88385989],
-        [0.00953968, 0.99987386, 0.01269893, -0.37047954],
-        [-0.06488235, 0.01329168, -0.9978044, 1.83498459],
-        [0.00000000, 0.00000000, 0.00000000, 1.00000000],
-    ]
-)
-
-T_camera_tag_new = np.array(
-    [
-        [0.99818706, 0.02746303, -0.05355721, -0.55566303],
-        [0.02651187, -0.99947933, -0.01839006, -0.34514479],
-        [-0.05403437, 0.01693682, -0.99839543, 1.84810026],
-        [0.00000000, 0.00000000, 0.00000000, 1.00000000],
-    ]
-)
+T_camera_tag = np.array([
+    [-0.99941476  ,0.02592443, -0.02231727, -0.31762493],
+    [ 0.02590838  ,0.99966381,  0.00100815, -0.04301517],
+    [ 0.0223359   ,0.00042935, -0.99975043,  0.92156439],
+    [ 0.          ,0.        ,  0.        ,  1.        ],
+ ])
 
 # T_camera_tag = np.array(
 #     [
@@ -66,8 +55,9 @@ T_camera_tag_new = np.array(
 #     ]
 # )
 
-T_robot_camera = np.matmul(T_robot_chessboard, np.linalg.inv(T_camera_chessboard))
+T_robot_camera = np.matmul(T_robot_april_tag, np.linalg.inv(T_camera_tag))
 T_camera_robot = np.linalg.inv(T_robot_camera)
+print("T_robot_camera\n",T_robot_camera)
 
 ############################################################################################
 
@@ -120,12 +110,10 @@ if __name__ == "__main__":
     T_camera_chessboard = np.array(transformation_matrix)
 
     # Define frames (expressed all in tag frame)
-    camera = np.linalg.inv(T_camera_chessboard)
+    camera = np.linalg.inv(T_camera_tag)
     tag = np.eye(4)
-    robot = np.linalg.inv(T_robot_chessboard)
+    robot = np.linalg.inv(T_robot_april_tag)
 
-    T_robot_camera =  np.matmul(T_robot_chessboard, np.linalg.inv(T_camera_chessboard))
-    print("T_robot_camera\n",T_robot_camera)
 
     # Plot the frames
     fig = plt.figure()
