@@ -14,37 +14,12 @@ class ArucoDetector:
         self.dist_coeffs = None
 
         # Hardcoded intrinsics for the OAK-D ROS data
-        self.K = np.array(
-            [
-                512.6467895507812,
-                0.0,
-                323.8077087402344,
-                0.0,
-                512.6467895507812,
-                183.98281860351562,
-                0.0,
-                0.0,
-                1.0,
-            ]
+        self.K = np.array( 
+            [512.6467895507812,     0.0,                323.8077087402344,
+            0.0,                    512.6467895507812,  183.98281860351562,
+            0.0,                    0.0,                1.0,]
         )
-        self.D = np.array(
-            [
-                12.029667854309082,
-                -115.97200775146484,
-                0.002035579876974225,
-                0.002628991613164544,
-                373.9336242675781,
-                11.838055610656738,
-                -114.76853942871094,
-                369.8811340332031,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ]
-        )
+        self.D = np.array([12.029667854309082, -115.97200775146484, 0.002035579876974225, 0.002628991613164544, 373.9336242675781, 11.838055610656738, -114.76853942871094, 369.8811340332031, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,])
 
         self.tag_corners_points = np.array(
             [
@@ -55,13 +30,7 @@ class ArucoDetector:
             ]
         )
 
-    def get_markers_pose(
-        self,
-        video_file,
-        visualise,
-        marker_length=0.011 * 6,
-        aruco_dict=cv2.aruco.DICT_4X4_50,
-    ):
+    def get_markers_pose( self, video_file, visualise, marker_length=0.067, aruco_dict=cv2.aruco.DICT_4X4_50,):
         """
         Given the path to an image returns tvces and rvecs for each detected marker
 
