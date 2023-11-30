@@ -83,7 +83,6 @@ class PoseEstimator():
         undistort = False # I don't know why but yelds worse inliners percentage if true
 
         # Read input
-
         current_file_path = os.path.abspath(__file__)
         video_path = os.path.join(os.path.dirname(current_file_path), "input/1_checkerd_calib_ros.mp4")
         cam = cv2.VideoCapture(video_path)
