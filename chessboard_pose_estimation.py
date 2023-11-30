@@ -79,7 +79,7 @@ class PoseEstimator():
         np.set_printoptions(suppress=True)
         legend = Legend()
         square_side_len = 0.03
-        board_height = 0.0
+        board_height = 0.006
         undistort = False # I don't know why but yelds worse inliners percentage if true
 
         # Read input
